@@ -143,6 +143,30 @@ def list_urun():
     return jsonify(dizi)
 
 
+
+@app.route("/api/v2/list_stock", methods=["GET", "POST"])
+def list_stock():
+    content = request.json
+    mycursor = mydb.cursor()
+    mycursor.execute("SELECT * FROM iUrunler")
+    myresult = mycursor.fetchall()
+
+
+    dizi = []
+
+
+    for x in myresult:
+      urun_id = x[0]
+      urun_barkod = x[1]
+      urun_isim = x[2]
+      stok_sayi = x[3]
+      i = {"urun_id": urun_id, "urun_barkod": urun_barkod,"urun_isim":urun_isim,"stok_sayi":stok_sayi}
+      dizi.append(i)
+
+
+    return jsonify({"status":"ok","message":"","data":dizi})
+
+
 @app.route("/api/v1/login", methods=["GET", "POST"])
 def login():
     content = request.json
@@ -160,18 +184,26 @@ def login():
             password  = content["password"]
 
 
-    mycursor = mydb.cursor()
-    mycursor.execute('SELECT * FROM iKullanici WHERE username = %s AND password = %s', (username, password,))
-    account = mycursor.fetchone()
-    if account:
-            login_time = time.time()
-            expreid = login_time + 86400
-            Jwt_Auth = jwt.encode({"time":login_time,"exp":expreid, "id": account[0],"yetki":account[3]}, "MySecretIs190704905", algorithm="HS256")
-            return jsonify({"status": "ok","exp":expreid,"login_time":login_time,"username":account[1],"yetki":account[3],"token":Jwt_Auth,"message":"Oturumunuz başarılı şekilde açıldı"})
-            exit()
-    else:
-            return jsonify({"status": "no","message":"Kullanıcı Adı Veya Şifreniz Hatalı"})
-            exit()
+
+    try:
+       mycursor = mydb.cursor()
+       mycursor.execute('SELECT * FROM iKullanici WHERE username = %s AND password = %s', (username, password,))
+       account = mycursor.fetchone()
+       if account:
+                 login_time = time.time()
+                 expreid = login_time + 86400
+                 Jwt_Auth = jwt.encode({"time":login_time,"exp":expreid, "id": account[0],"yetki":account[3]}, "MySecretIs190704905", algorithm="HS256")
+                 return jsonify({"status": "ok","exp":expreid,"login_time":login_time,"username":account[1],"yetki":account[3],"token":Jwt_Auth,"message":"Oturumunuz başarılı şekilde açıldı"})
+                 exit()
+       else:
+                 return jsonify({"status": "no","message":"Kullanıcı Adı Veya Şifreniz Hatalı"})
+                 exit()
+
+
+
+    except:
+                 return jsonify({"status": "no","message":"Kullanıcı Adı Veya Şifreniz Hatalı"})
+
 
 
 
@@ -532,6 +564,7 @@ def log_list():
 
 
 
+
             for x in myresult:
                id = x[0]
                kullanici_id = x[1]
@@ -549,7 +582,8 @@ def log_list():
 
                islem_yapilan_urun = x[2]
                events = x[3]
-               i = {"db_id": id, "kullanici_id": kullanici_id,"islem_yapilan_urun":islem_yapilan_urun,"events":events,"name":islemiyapanname}
+               tarih = x[4]
+               i = {"db_id": id, "kullanici_id": kullanici_id,"islem_yapilan_urun":islem_yapilan_urun,"events":events,"name":islemiyapanname,"tarih":tarih}
                dizi.append(i)
 
             return jsonify(dizi)
@@ -598,7 +632,7 @@ def admin_creator():
     else:
                      yetkis  = content["yetki"]
 
-    if not yetki.isnumeric():
+    if not yetkis.isnumeric():
                      return jsonify({"status": "no","message":"Yetki Sadece sayılardan oluşturulmalıdır."})
                      exit()
 
@@ -692,7 +726,7 @@ def list_yonetici():
                yetki = x[3]
 
 
-               i = {"db_id": id, "username": username,"password":'*****'}
+               i = {"db_id": id, "username": username,"password":'*****',"yetki":yetki}
                dizi.append(i)
 
             return jsonify(dizi)
@@ -1028,4 +1062,4 @@ def delete_all_tum_urunler():
 
 
 if __name__ == "__main__":
-    app.run(host="192.168.1.15", port=5001, debug=True)
+    app.run(host="0.0.0.0", port=80, debug=True)
